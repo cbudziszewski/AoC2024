@@ -90,12 +90,68 @@ def compute(program, RA = 0, RB = 0, RC = 0, single=False):
         else:
             raise RuntimeError('Unknown Operation: {instruction}')
         I = I + 2
-#    print(f"\noutput: {','.join(list(map(str,output)))}")
     return output
 
 def validate(l1, l2):
     return reduce(lambda x, y: x and y, map(lambda p, q: p == q, l1, l2), True)
+
+
+def brute_force_approach(program):
+    l = len(program)
+    l1 = int(pow(8,l-1))
+    l2 = int(pow(8,l))
+    print(f"Bruteforce between {l1} and {l2}")
+    for A in range(l1,l2):
+        test = compute(program,A)
+        if test == program:
+            print(f"GOTCHA: A = {A}")
+            return A
+
+
+def recursive_approach(program, candidates, idx):
+    print(f"recursive: {idx:2} : {candidates}")
+
+    if idx == len(program):
+        print(f"min candidate: {min(candidates)}")
+        return min(candidates)
+    
+    new_candidates = set()
+    for A in candidates: 
+        tbytes = [ (A * 8) + x for x in range(0, 8)]
+        for i in tbytes:
+            if compute(program, i, 0, 0) == program[-1*(idx+1):]:
+                new_candidates.add(i)
+    
+    if len(new_candidates) > 0:
+       print(f"new cdt: {new_candidates}")
+       return recursive_approach(program, new_candidates, idx + 1)
         
+def combination_lock_approach(program):
+    l = int(len(program))
+    A = 0
+    for idx in range(0, l):
+        ridx = l - 1 - idx
+        tbytes = [ (A * 8) + x for x in range(0, 8)]
+        print(f"block {idx}: tbytes ({len(tbytes)}) {tbytes}")
+        print(f"target: {program[-1*(idx+1):]}")
+
+        solutions = list()
+
+        for i in tbytes:
+            test = compute(program, i, 0, 0)
+            print(f"bit {i} {i:b}: {test}")
+            if test == program[-1*(idx+1):]:
+                solutions.append(i)
+        print(f"solutions: {solutions}")
+        
+        if len(solutions) == 0:
+            print(f"NO SOLUTIONS on STEP {idx}")
+            return A
+
+        A = min(solutions)
+
+    return A
+
 if __name__ == "__main__":
     with open('input.txt') as file:
         for line in file:
@@ -117,42 +173,13 @@ if __name__ == "__main__":
     A = 0
     L = len(program)
     print(f"Lenght of Program: {L}")
-    for idx in range(0, len(program)):
+    print(f"          in Bits: {L*3}")
+   
+    A = recursive_approach(program,list(range(0,8)), 0)
+#    A = combination_lock_approach(program) 
+#    A = brute_force_approach(program)
 
-        v = [v1 + int(pow(8,idx)) * v2 for v1 in range(0,8) for v2 in range(1,8)]
-
-        print(f"index {idx}: values {v}" )
-        print(f"program last {idx}: {program[-1*(idx+1):]}")
-
-        for i in v:
-            print(f"{idx}/{i}: {compute(program, i, 0,0)} == {program[-1*(idx+1):]}")
-            if compute(program, i, 0,0) == program[-1*(idx+1):]:
-                A = A + i
-                break
-
-        print(f"A={A}")
-
-        if idx == 4:
-            break
-
-
-#
-#            output = compute(program, A+i, 0,0, True)
-#            print(f"output: {output} program[{c}] = {program[c]} program[{cc}] = {program[cc]}")
-
-
-
-#            print(f"VAL: {program[:cc]}, {compute(program, A + i, 0, 0)[:cc]}")
-#
-#            if validate(program[:cc], compute(program, A + i, 0, 0)[:cc]):
-#                print(f"found value {i} for item {program[c]}")
-#                A = A + i
-#                break
-                
-
-    print(f"Final A: {A}\n         35184372088832\n         35804057703009")
-    
-    print()
+    print(f"\nFinal A: {A}\n")
 
     print(f"\n==== TEST THE RESULT {A} ====\n")
     test = compute(program, A, 0, 0)
